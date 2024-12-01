@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Crews.Extensions.Http" Version="1.0.0" />
+    <PackageReference Include="Crews.PlanningCenter.Api" Version="1.0.0-preview.13" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
   </ItemGroup>
 

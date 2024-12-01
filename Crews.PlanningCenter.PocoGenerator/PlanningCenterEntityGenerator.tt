@@ -1,0 +1,63 @@
+<#@ template debug="true" hostspecific="true" language="C#" #>
+<#@ output extension=".cs" #>
+<#@ assembly name="/workspaces/planningcenter-poco-generator/Crews.PlanningCenter.PocoGenerator/bin/Debug/net8.0/Crews.PlanningCenter.PocoGenerator.dll" #>
+<#@ assembly name="/home/vscode/.nuget/packages/microsoft.extensions.options/9.0.0/lib/net9.0/Microsoft.Extensions.Options.dll" #>
+<#@ assembly name="/home/vscode/.nuget/packages/crews.extensions.http/1.0.0/lib/net8.0/Crews.Extensions.Http.dll" #>
+<#@ assembly name="/home/vscode/.nuget/packages/crews.extensions.primitives/1.1.0/lib/net8.0/Crews.Extensions.Primitives.dll" #>
+<#@ import namespace="Crews.PlanningCenter.PocoGenerator" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Threading.Tasks" #>
+<#@ import namespace="Microsoft.Extensions.Options" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="Crews.Extensions.Primitives" #>
+<#@ import namespace="Crews.PlanningCenter.PocoGenerator.Extensions" #>
+<#
+  PlanningCenterApiReferenceService service = new(new(), Options.Create<PlanningCenterApiReferenceService.Options>(new()
+    {
+      BaseAddress = new("https://api.planningcenteronline.com/")
+    }));
+
+	foreach (string product in PlanningCenterApiReferenceService.Products)
+  {
+    IEnumerable<string> versions = Task.Run(() => service.GetVersionsAsync(product)).Result;
+    foreach (string version in versions)
+    {
+      foreach (PlanningCenterResourceInfo resource in Task.Run(() => service.GetResourcesInfoAsync(product, version)).Result)
+      {
+#>
+using System.Text.Json;
+
+namespace Crews.PlanningCenter.Models.<#=product.ToPascalCase()#>.V<#=version.ToSnakeCase()#>.Entities;
+
+<#=resource.Description.ToXmlDocSummary()#>
+public record <#=resource.Name#>
+{
+<#
+      foreach (PlanningCenterResourceAttributeInfo attribute in Task.Run(() => service.GetAttributesInfoAsync(product, version, resource.ID)).Result)
+      {
+#>
+<#=attribute.Description.ToXmlDocSummary(indentSpaces: 2)#>
+  public <#=attribute.ClrTypeName#>? <#=attribute.Name.ToPascalCase()#> { get; init; }
+
+<#
+      }
+#>
+}
+<#
+	      SaveOutputToSubFolder($"Output/{product.ToPascalCase()}/V{version.ToSnakeCase()}/Entities", resource.Name + ".cs");
+      }
+    }
+  }
+#>
+<#+
+private void SaveOutputToSubFolder(string folderName, string outputFileName) {
+  string templateDirectory = Path.GetDirectoryName(Host.TemplateFile);
+  string newDirectoryName = Path.Combine(templateDirectory,folderName);
+  if(!Directory.Exists(newDirectoryName))
+    Directory.CreateDirectory(newDirectoryName);
+  string outputFilePath = Path.Combine(newDirectoryName, outputFileName);
+  File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString()); 
+  this.GenerationEnvironment.Clear();
+}
+#>

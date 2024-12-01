@@ -1,24 +1,16 @@
-using System.Text.Json;
-using Microsoft.Extensions.Options;
+using Xunit.Abstractions;
+using Crews.PlanningCenter.PocoGenerator.Extensions;
+using Crews.Extensions.Primitives;
 
 namespace Crews.PlanningCenter.PocoGenerator.Tests;
 
-public class Sandbox
+public class Sandbox(ITestOutputHelper output)
 {
   [Fact]
-  public async Task Test1()
+  public void Test1()
   {
-    PlanningCenterApiReferenceService service = new(
-      new(), Options.Create<PlanningCenterApiReferenceService.Options>(new()
-      {
-        BaseAddress = new("https://api.planningcenteronline.com/")
-      }));
-
-    JsonDocument document = await service.GetExample("calendar", "2022-07-07", "conflict");
-    
-    if (document.RootElement.TryGetProperty("type", out JsonElement type))
-    {
-      Console.WriteLine(type.GetString());
-    }
+    output.WriteLine("This\nis a\ntest.".ToXmlDocSummary(indentSpaces: 4));
+    output.WriteLine("2022-07-07".ToPascalCase());
+    output.WriteLine("2024-12-01".ToSnakeCase());
   }
 }
